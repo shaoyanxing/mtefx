@@ -27,7 +27,10 @@ Thumbs.db
 _probe_out/
 *.tmp
 
-# Test/benchmark scripts (local only)
+# Test/benchmark/probe scripts (local only)
+test_*.py
+*_test.py
+test_*.py
 verify_*.py
 bench_*.py
 profile_*.py
@@ -35,6 +38,18 @@ download_*.py
 search_*.py
 test_engine.py
 verify_clean.py
+mtef_fast_pipeline.py
+optimization_report.md
+
+# Probe/diag/regress scripts (local only)
+_*_probe*.py
+_*_bench*.py
+_*_diag*.py
+_*_diff*.py
+_*_regress*.py
+_*_verify*.py
+_*_extract*.py
+_*_microbench*.py
 
 # Workbuddy memory (private)
 .workbuddy/
