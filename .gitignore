@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg-link
+dist/
+build/
+.eggs/
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project temp files
+*.log
+_probe_out/
+*.tmp
+
+# Test/benchmark scripts (local only)
+verify_*.py
+bench_*.py
+profile_*.py
+download_*.py
+search_*.py
+test_engine.py
+verify_clean.py
+
+# Workbuddy memory (private)
+.workbuddy/
+
+# Original zip
+1.zip
