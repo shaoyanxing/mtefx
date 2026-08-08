@@ -1,4 +1,4 @@
-# mtefx — MathType Formula Parser · Zero-COM Acceleration Layer
+# mtefx — MathType Formula Parser · Zero-COM dependency
 
 > Convert MathType OLE formulas (`.bin`) embedded in Word `.docx` files into
 > native OMML equations — **zero COM, zero Word/Excel dependency**, pure Python + XSLT.
