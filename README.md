@@ -1,5 +1,7 @@
 # mtefx — MathType 公式解析引擎 · 零 COM 依赖
 
+[English Readme](https://github.com/shaoyanxing/mtefx/edit/main/README_en.md)
+
 > 把 Word `.docx` 里的 MathType OLE 公式（`.bin`）转换为原生 OMML 可编辑公式，
 > **全程零 COM、零 Word/Excel 依赖**，纯 Python + XSLT。
 
