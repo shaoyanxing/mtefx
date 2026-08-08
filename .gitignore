@@ -27,10 +27,17 @@ Thumbs.db
 _probe_out/
 *.tmp
 
+# Binary test fixtures (local only)
+*.bin
+_synth_fixtures/
+_web_fixtures/
+real_ole/
+
 # Test/benchmark/probe scripts (local only)
 test_*.py
 *_test.py
-test_*.py
+conftest.py
+tests/
 verify_*.py
 bench_*.py
 profile_*.py
@@ -40,16 +47,26 @@ test_engine.py
 verify_clean.py
 mtef_fast_pipeline.py
 optimization_report.md
+selftest.py
+build_assets.py
+regression.py
 
 # Probe/diag/regress scripts (local only)
-_*_probe*.py
-_*_bench*.py
-_*_diag*.py
-_*_diff*.py
-_*_regress*.py
-_*_verify*.py
-_*_extract*.py
-_*_microbench*.py
+mtefx/_bench_full.py
+mtefx/_diag.py
+mtefx/_diff_matrix_corpus.py
+mtefx/_extract_char.py
+mtefx/_microbench.py
+mtefx/_probe_hard.py
+mtefx/_probe_hardmath.py
+mtefx/_probe_hardmath2.py
+mtefx/_regress_corpus.py
+mtefx/_verify_full.py
+mtefx/_verify_fused.py
+mtefx/bench.py
+
+# Internal docs (local only)
+MTEF解析开源方案调研.md
 
 # Workbuddy memory (private)
 .workbuddy/
