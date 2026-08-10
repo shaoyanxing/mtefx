@@ -219,12 +219,9 @@ def _rewrite_group_brace_to_groupChr(omml_root: etree._Element) -> int:
         group_chr_pr = etree.SubElement(group_chr, f"{M}groupChrPr")
         chr_el = etree.SubElement(group_chr_pr, f"{M}chr")
         chr_el.set(f"{M}val", chr_val)
-        # pos: top 表示大括号在内容左侧（OMML 默认）
-        pos = etree.SubElement(group_chr_pr, f"{M}pos")
-        pos.set(f"{M}val", "top")
-        # vertJc: 垂直对齐方式
-        vert_jc = etree.SubElement(group_chr_pr, f"{M}vertJc")
-        vert_jc.set(f"{M}val", "center")
+        # 不设置 m:pos：OMML 规范里 m:pos 缺省值就是「左侧大括号」，
+        # 设了 top 会让大括号跑到内容上方（overbrace 样式）。
+        # vertJc 缺省也是 center，无需显式设。
         # 把 first_e 移入 groupChr
         md.remove(first_e)
         group_chr.append(first_e)
