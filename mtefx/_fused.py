@@ -115,12 +115,18 @@ def _rewrite_fence_mrow_to_mfenced(root: etree._Element) -> int:
     """把 <mrow> 中以 fence mo 起头但缺少闭合 mo 的模式改写为 <mfenced>。
 
     实测真实语料中 MTEF XSLT fence.xsl 经常产出如下残缺模式（闭合括号 mo 缺失）：
-        <mrow><mrow><mo>{</mo><mtable>...</mtable></mrow></mrow>
+        <mrow><mrow><mo>{</mo><mrow><mtable>...</mtable></mrow></mrow></mrow>
 
     还有完整模式：
         <mrow><mo>{</mo>...<mo>}</mo></mrow>
 
-    两种都改写为 <mfenced open="X" close="Y">，让 MML2OMML 生成可撑大的 <m:d>。
+    特殊模式——方程组/分段函数（只希望左边有撑大的 {，不要右括号）：
+        <mrow><mo>{</mo><mrow><mtable/></mrow></mrow>
+
+    修复策略：
+    1. 如果 middle 里只含 1 个 mtable/mtr 堆叠结构 → 不改写，移除 fence mo
+       （因为 OMML m:eqArr 自身就在左侧渲染 {，不需要 m:d 包裹）
+    2. 否则改写为 mfenced
     返回改写数量。
     """
     n = 0
@@ -143,34 +149,46 @@ def _rewrite_fence_mrow_to_mfenced(root: etree._Element) -> int:
             and (last.text or "").strip() == expected_close
         )
 
-        # 中间内容：从 kids[1] 开始到（has_close 时停在末尾前，否则到末尾）
         if has_close:
             middle = kids[1:-1]
         else:
-            # 闭合 mo 缺失：复制首 mo 作为尾 mo
-            closing = etree.Element(f"{{{_MATHML_NS}}}mo")
-            closing.text = expected_close
-            # 复制首 mo 的 stretchy 等属性
-            for k, v in first.attrib.items():
-                closing.set(k, v)
             middle = kids[1:]
-            # 把 closing 临时挂到 mrow 末尾（但最终 middle 不会包含它）
-            mrow.append(closing)
-            has_close = True  # 标记下面 middle 取到末尾前
 
         if not middle:
-            # 退化：单独一个 fence mo，不改写
             continue
 
-        # 构造 mfenced
+        # 特殊处理：middle 是 mtable 多行结构（如方程组/分段函数）
+        # 这种情形只需要左大括号（m:eqArr/m:r 自带），右边不应有 }
+        # 移除开括号 mo，middle 保持原样，整体 mrow 简化为只剩 middle
+        if not has_close and open_ch == "{":
+            # 检查 middle 是否「包了一个 mtable 多行」
+            is_multiline = _contains_mtable_block(middle)
+            if is_multiline:
+                # 直接把 mrow 简化为只剩 middle（去掉开括号 mo）
+                parent = mrow.getparent()
+                if parent is None:
+                    continue
+                # 把 mrow 替换为：<mrow>{middle 内容}</mrow> 但无 { mo
+                # 更简单：去掉 mrow 包装，把 children 提到 parent
+                idx = parent.index(mrow)
+                parent.remove(mrow)
+                for i, c in enumerate(middle):
+                    parent.insert(idx + i, c)
+                n += 1
+                continue
+
+        # 标准路径：构造 mfenced 让 MML2OMML 输出可撑大的 m:d
+        if not has_close:
+            closing = etree.Element(f"{{{_MATHML_NS}}}mo")
+            closing.text = expected_close
+            for k, v in first.attrib.items():
+                closing.set(k, v)
+            mrow.append(closing)
+
         mfenced = etree.Element(f"{{{_MATHML_NS}}}mfenced")
         mfenced.set("open", open_ch)
         mfenced.set("close", expected_close)
-        # 关键：显式把 separators 设为空字符串，避免 MML2OMML 默认添加
-        # sepChr="," 分隔符。Word 渲染 m:d + m:eqArr 时，sepChr 会在每个 m:e
-        # 之间显示一个逗号（即使 m:eqArr 自己有换行机制），视觉上像是公式
-        # 右侧多了几个逗号/半个大括号。让 separators 为空则 m:dPr 里无 sepChr，
-        # 不显示分隔符。
+        # separators 设为空，避免 MML2OMML 默认 "," 分隔符
         mfenced.set("separators", "")
         stretchy = first.get("stretchy")
         if stretchy:
@@ -180,13 +198,24 @@ def _rewrite_fence_mrow_to_mfenced(root: etree._Element) -> int:
                 mfenced.set(k, v)
         for c in middle:
             mfenced.append(c)
-        # 替换 mrow
         parent = mrow.getparent()
         if parent is None:
             continue
         parent.replace(mrow, mfenced)
         n += 1
     return n
+
+
+def _contains_mtable_block(children) -> bool:
+    """检查 children 列表里是否含 mtable 多行块（方程组/分段函数特征）。"""
+    for c in children:
+        if c.tag == f"{{{_MATHML_NS}}}mtable":
+            return True
+        # 递归检查：mrow 包 mtable 也算
+        if c.tag == f"{{{_MATHML_NS}}}mrow":
+            for sub in c.iter(f"{{{_MATHML_NS}}}mtable"):
+                return True
+    return False
 
 
 def _is_degenerate_omml(el: etree._Element) -> bool:
