@@ -120,13 +120,9 @@ def _rewrite_fence_mrow_to_mfenced(root: etree._Element) -> int:
     还有完整模式：
         <mrow><mo>{</mo>...<mo>}</mo></mrow>
 
-    特殊模式——方程组/分段函数（只希望左边有撑大的 {，不要右括号）：
-        <mrow><mo>{</mo><mrow><mtable/></mrow></mrow>
-
-    修复策略：
-    1. 如果 middle 里只含 1 个 mtable/mtr 堆叠结构 → 不改写，移除 fence mo
-       （因为 OMML m:eqArr 自身就在左侧渲染 {，不需要 m:d 包裹）
-    2. 否则改写为 mfenced
+    改写策略：所有模式都统一改写为 mfenced，让 MML2OMML 输出可撑大的 m:d。
+    后续 _rewrite_group_brace_to_groupChr() 会再把「m:d 包 mtable 单 m:e（方程组）」
+    的模式改写为 m:groupChr——这才 OMML 标准的「左大括号、无右括号」结构。
     返回改写数量。
     """
     n = 0
@@ -157,26 +153,6 @@ def _rewrite_fence_mrow_to_mfenced(root: etree._Element) -> int:
         if not middle:
             continue
 
-        # 特殊处理：middle 是 mtable 多行结构（如方程组/分段函数）
-        # 这种情形只需要左大括号（m:eqArr/m:r 自带），右边不应有 }
-        # 移除开括号 mo，middle 保持原样，整体 mrow 简化为只剩 middle
-        if not has_close and open_ch == "{":
-            # 检查 middle 是否「包了一个 mtable 多行」
-            is_multiline = _contains_mtable_block(middle)
-            if is_multiline:
-                # 直接把 mrow 简化为只剩 middle（去掉开括号 mo）
-                parent = mrow.getparent()
-                if parent is None:
-                    continue
-                # 把 mrow 替换为：<mrow>{middle 内容}</mrow> 但无 { mo
-                # 更简单：去掉 mrow 包装，把 children 提到 parent
-                idx = parent.index(mrow)
-                parent.remove(mrow)
-                for i, c in enumerate(middle):
-                    parent.insert(idx + i, c)
-                n += 1
-                continue
-
         # 标准路径：构造 mfenced 让 MML2OMML 输出可撑大的 m:d
         if not has_close:
             closing = etree.Element(f"{{{_MATHML_NS}}}mo")
@@ -206,16 +182,59 @@ def _rewrite_fence_mrow_to_mfenced(root: etree._Element) -> int:
     return n
 
 
-def _contains_mtable_block(children) -> bool:
-    """检查 children 列表里是否含 mtable 多行块（方程组/分段函数特征）。"""
-    for c in children:
-        if c.tag == f"{{{_MATHML_NS}}}mtable":
-            return True
-        # 递归检查：mrow 包 mtable 也算
-        if c.tag == f"{{{_MATHML_NS}}}mrow":
-            for sub in c.iter(f"{{{_MATHML_NS}}}mtable"):
-                return True
-    return False
+def _rewrite_group_brace_to_groupChr(omml_root: etree._Element) -> int:
+    """OMML 后处理：把「<m:d> 包 <m:e><m:eqArr>...</m:eqArr></m:e>」模式
+    改写为 <m:groupChr>，OMML 的 groupChr 才是「只显示左大括号、不显示右大括号」
+    的标准方程组/分段函数结构。
+
+    m:d 模式（m:dPr 含 begChr 但 endChr 也是单一字符）会显示左右两个括号，
+    视觉上像「{ ... }」括号包方程组——不是标准样式。
+    m:groupChr 模式只显示一个撑大的 begChr 字符，右侧无 endChr。
+
+    触发条件：
+      - m:d 第一个 m:e 内只含 m:eqArr（方程组堆叠）
+      - m:dPr 含 begChr（开括号字符）
+    返回改写数量。
+    """
+    M = "{http://schemas.openxmlformats.org/officeDocument/2006/math}"
+    n = 0
+    for md in list(omml_root.iter(f"{M}d")):
+        dpr = md.find(f"{M}dPr")
+        if dpr is None:
+            continue
+        beg = dpr.find(f"{M}begChr")
+        if beg is None:
+            continue
+        # 检查 m:d 的第一个 m:e 内部是否就是 m:eqArr
+        es = md.findall(f"{M}e")
+        if len(es) != 1:
+            continue  # 多 m:e（如矩阵的多个列）保持 m:d
+        first_e = es[0]
+        # first_e 内部必须是 m:eqArr（堆叠方程组）
+        if first_e.find(f"{M}eqArr") is None:
+            continue
+        # 改写为 m:groupChr
+        chr_val = beg.get(f"{M}val", "")
+        group_chr = etree.Element(f"{M}groupChr")
+        group_chr_pr = etree.SubElement(group_chr, f"{M}groupChrPr")
+        chr_el = etree.SubElement(group_chr_pr, f"{M}chr")
+        chr_el.set(f"{M}val", chr_val)
+        # pos: top 表示大括号在内容左侧（OMML 默认）
+        pos = etree.SubElement(group_chr_pr, f"{M}pos")
+        pos.set(f"{M}val", "top")
+        # vertJc: 垂直对齐方式
+        vert_jc = etree.SubElement(group_chr_pr, f"{M}vertJc")
+        vert_jc.set(f"{M}val", "center")
+        # 把 first_e 移入 groupChr
+        md.remove(first_e)
+        group_chr.append(first_e)
+        # 替换 m:d
+        parent = md.getparent()
+        if parent is None:
+            continue
+        parent.replace(md, group_chr)
+        n += 1
+    return n
 
 
 def _is_degenerate_omml(el: etree._Element) -> bool:
@@ -287,5 +306,9 @@ def convert_fused(
     # 静默丢弃。这里判为 empty，使上层保留原始 OLE 而非写入空壳。
     if _is_degenerate_omml(omml_root):
         return ("empty", None, fixed, unresolved, (time.perf_counter() - t0) * 1000)
+
+    # OMML 后处理：把「m:d 包 mtable 单 m:e（方程组）」改写为 m:groupChr，
+    # 这是 OMML 标准的「只显示左大括号、无右括号」结构。
+    _rewrite_group_brace_to_groupChr(omml_root)
 
     return ("ok", omml_root, fixed, unresolved, (time.perf_counter() - t0) * 1000)
