@@ -14,7 +14,7 @@ Word 原生 OMML 公式，传统方案只有两条路：
    交互式桌面会话、单进程串行、无法横向扩展。与服务器批量解析场景天然互斥。
 2. **Python + XSLT 路线** - Python + XSLT，进程内完成，配合多进程池线性扩展。
 
-本项目走 **olefile + XSLT 路线**，在 [`mathtypejx`](https://github.com/a917470154/mathtypejx)
+本项目走 **Python + XSLT 路线**，在 [`mathtypejx`](https://github.com/a917470154/mathtypejx)
 和 [`transpect/mathtype-extension`](https://github.com/transpect/mathtype-extension)
 两条上游资产之上做加速与增强。
 
