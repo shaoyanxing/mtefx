@@ -91,6 +91,98 @@ def _unwrap_unsupported_menclose(root: etree._Element) -> etree._Element:
     return root
 
 
+# MML2OMML 只对 <mfenced> 元素生成可撑大的 <m:d><m:dPr><m:begChr/><m:endChr/></m:dPr>
+# 结构；看到 <mrow><mo>{</mo>...<mo>}</mo></mrow> 这种「裸 mo 当括号」的模式会按普通
+# token 序列处理，导致：
+#   1. 括号被输出为 <m:r><m:t>{</m:t></m:r>，Word 不撑大
+#   2. 某些情况下闭合括号 <mo>}</mo> 会被忽略（实测真实语料：4 个左大括号，0 个右大括号）
+# 修复：扫描 mrow 模式，把 fence 重写为 mfenced，让 MML2OMML 出正确的 m:d。
+_FENCE_CHARS = {
+    "(": (")", "(", ")"),
+    "[": ("]", "[", "]"),
+    "{": ("}", "{", "}"),
+    "\u2329": ("\u232A", "\u2329", "\u232A"),  # ⟨⟩
+    "\u230A": ("\u230B", "\u230A", "\u230B"),  # ⌊⌋
+    "\u2308": ("\u2309", "\u2308", "\u2309"),  # ⌈⌉
+    "\u2016": ("\u2016", "\u2016", "\u2016"),  # ‖
+    "\u301A": ("\u301B", "\u301A", "\u301B"),  # 〚〛
+    "|": ("|", "|", "|"),                       # 绝对值
+    "\u007C": ("\u007C", "\u007C", "\u007C"),
+}
+
+
+def _rewrite_fence_mrow_to_mfenced(root: etree._Element) -> int:
+    """把 <mrow> 中以 fence mo 起头但缺少闭合 mo 的模式改写为 <mfenced>。
+
+    实测真实语料中 MTEF XSLT fence.xsl 经常产出如下残缺模式（闭合括号 mo 缺失）：
+        <mrow><mrow><mo>{</mo><mtable>...</mtable></mrow></mrow>
+
+    还有完整模式：
+        <mrow><mo>{</mo>...<mo>}</mo></mrow>
+
+    两种都改写为 <mfenced open="X" close="Y">，让 MML2OMML 生成可撑大的 <m:d>。
+    返回改写数量。
+    """
+    n = 0
+    for mrow in list(root.iter(f"{{{_MATHML_NS}}}mrow")):
+        kids = list(mrow)
+        if len(kids) < 2:
+            continue
+        first = kids[0]
+        if first.tag != f"{{{_MATHML_NS}}}mo":
+            continue
+        open_ch = (first.text or "").strip()
+        if open_ch not in _FENCE_CHARS:
+            continue
+        expected_close = _FENCE_CHARS[open_ch][0]
+
+        # 检查尾部是否已有匹配的闭合 mo
+        last = kids[-1]
+        has_close = (
+            last.tag == f"{{{_MATHML_NS}}}mo"
+            and (last.text or "").strip() == expected_close
+        )
+
+        # 中间内容：从 kids[1] 开始到（has_close 时停在末尾前，否则到末尾）
+        if has_close:
+            middle = kids[1:-1]
+        else:
+            # 闭合 mo 缺失：复制首 mo 作为尾 mo
+            closing = etree.Element(f"{{{_MATHML_NS}}}mo")
+            closing.text = expected_close
+            # 复制首 mo 的 stretchy 等属性
+            for k, v in first.attrib.items():
+                closing.set(k, v)
+            middle = kids[1:]
+            # 把 closing 临时挂到 mrow 末尾（但最终 middle 不会包含它）
+            mrow.append(closing)
+            has_close = True  # 标记下面 middle 取到末尾前
+
+        if not middle:
+            # 退化：单独一个 fence mo，不改写
+            continue
+
+        # 构造 mfenced
+        mfenced = etree.Element(f"{{{_MATHML_NS}}}mfenced")
+        mfenced.set("open", open_ch)
+        mfenced.set("close", expected_close)
+        stretchy = first.get("stretchy")
+        if stretchy:
+            mfenced.set("stretchy", stretchy)
+        for k, v in first.attrib.items():
+            if k != "stretchy":
+                mfenced.set(k, v)
+        for c in middle:
+            mfenced.append(c)
+        # 替换 mrow
+        parent = mrow.getparent()
+        if parent is None:
+            continue
+        parent.replace(mrow, mfenced)
+        n += 1
+    return n
+
+
 def _is_degenerate_omml(el: etree._Element) -> bool:
     """OMML 是否退化（空壳）：无子元素且无文本，即 <m:oMath/>。"""
     return el is not None and len(list(el)) == 0 and not (el.text or "").strip()
@@ -138,6 +230,8 @@ def convert_fused(
         fixed, unresolved = repair_pua_element(root)
     # 展开 MML2OMML 不支持的 menclose 记号（longdiv/actuarial），保住内部数学
     _unwrap_unsupported_menclose(root)
+    # 把 <mrow><mo>{</mo>...<mo>}</mo></mrow> 改写为 <mfenced>，让 MML2OMML 生成可撑大的 m:d
+    _rewrite_fence_mrow_to_mfenced(root)
 
     try:
         result = _get_transform()(root)
