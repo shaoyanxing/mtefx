@@ -166,6 +166,12 @@ def _rewrite_fence_mrow_to_mfenced(root: etree._Element) -> int:
         mfenced = etree.Element(f"{{{_MATHML_NS}}}mfenced")
         mfenced.set("open", open_ch)
         mfenced.set("close", expected_close)
+        # 关键：显式把 separators 设为空字符串，避免 MML2OMML 默认添加
+        # sepChr="," 分隔符。Word 渲染 m:d + m:eqArr 时，sepChr 会在每个 m:e
+        # 之间显示一个逗号（即使 m:eqArr 自己有换行机制），视觉上像是公式
+        # 右侧多了几个逗号/半个大括号。让 separators 为空则 m:dPr 里无 sepChr，
+        # 不显示分隔符。
+        mfenced.set("separators", "")
         stretchy = first.get("stretchy")
         if stretchy:
             mfenced.set("stretchy", stretchy)
