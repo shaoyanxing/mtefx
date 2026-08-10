@@ -194,7 +194,11 @@ def convert_docx_bytes(
             omml_el = etree.fromstring(omml_str.encode("utf-8"))
 
         # 4) 替换承载公式的整个 <w:r> 为行内 <m:oMath>
-        #    向上回溯找到真正的 run（OLE 有时被 v:shape / w:drawing 包着）
+        #    向上回溯找到真正的 run（OLE 有时被 v:shape / w:drawing 包着）。
+        #    ⚠️ 关键：w:r 里常常同时含 w:object 和 w:t（如题号"OLE"组合、上下角标），
+        #    直接 parent.remove(w_r) 会把 w:t 里的题号/文字一并吞掉，导致 18-20 题号
+        #    在转换后消失。修复：分裂 w:r —— w:object 之前/之后的 w:t 兄弟分别提取
+        #    到新建的独立 w:r 里保留下来。
         w_r = obj
         while w_r is not None and w_r.tag != f"{{{_NS['w']}}}r":
             w_r = w_r.getparent()
@@ -202,9 +206,54 @@ def convert_docx_bytes(
             rep.failed += 1
             rep.failures.append((bin_path, "未找到承载公式的 w:r"))
             continue
-        new_el = _clean_omml(omml_el)
+
+        # 4a) 分裂 w:r：把 obj 之前/之后的 w:t 兄弟保留为独立 w:r
         parent = w_r.getparent()
         idx = parent.index(w_r)
+        # 之前的 w:t 兄弟（obj 前面的所有 w:t 元素，连同 w:rPr）
+        lead_children = []
+        # 之后的 w:t 兄弟
+        trail_children = []
+        passed_obj = False
+        for child in list(w_r):
+            if child.tag == f"{{{_NS['w']}}}rPr":
+                lead_children.append(child)  # rPr 跟 lead 走
+                continue
+            if child is obj:
+                passed_obj = True
+                continue
+            # 只在直接子层处理 w:t；v:shape/w:drawing 等嵌套包裹不动
+            if child.tag in (f"{{{_NS['w']}}}t", f"{{{_NS['w']}}}tab",
+                              f"{{{_NS['w']}}}br"):
+                if passed_obj:
+                    trail_children.append(child)
+                else:
+                    lead_children.append(child)
+            else:
+                # 其他非 obj 元素（嵌套 object/drawing）保持原样跟着 w_r 走
+                if passed_obj:
+                    trail_children.append(child)
+                else:
+                    lead_children.append(child)
+        # 插入新 run 承载 lead 文本
+        if lead_children:
+            new_lead = etree.SubElement(parent, f"{{{_NS['w']}}}r")
+            for c in lead_children:
+                new_lead.append(c)
+            parent.remove(new_lead)
+            parent.insert(idx, new_lead)
+            idx += 1
+        # 插入新 run 承载 trail 文本
+        if trail_children:
+            new_trail = etree.SubElement(parent, f"{{{_NS['w']}}}r")
+            for c in trail_children:
+                new_trail.append(c)
+            parent.remove(new_trail)
+            idx += 1  # 紧跟在 obj 之后插入
+            parent.insert(idx, new_trail)
+
+        # 4b) 现在 w:r 里只剩下 w:object（+ rPr + 嵌套 object），可以安全替换为 m:oMath
+        new_el = _clean_omml(omml_el)
         parent.insert(idx, new_el)
         parent.remove(w_r)
         rep.ok += 1
