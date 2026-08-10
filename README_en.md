@@ -85,21 +85,33 @@ OMML (in-place replacement of OLE objects in docx)
 ## Quick Start
 
 ```python
-from mtefx import convert, convert_docx, convert_many, FormulaResult
+from mtefx import convert, convert_docx_file, convert_zip_of_docx, FormulaResult
 
-# Single formula: OLE bytes (from docx embedding / .bin / raw MTEF)
+# 1. Single formula: OLE bytes (from docx embedding / .bin / raw MTEF)
 res: FormulaResult = convert(ole_bytes)
 if res.ok:
-    print(res.mathml)
+    print(res.mathml)  # MathML string
     print("PUA fixed:", res.pua_fixed, "unresolved:", res.pua_unresolved)
 
-# Document-level: read docx embedded formulas directly
-rep = convert_docx("exam.docx")
-print(f"{rep.ok}/{rep.total} succeeded, dedup hits {rep.cache_hits}")
+# 2. Convert a whole docx and save to a new file (OLE objects replaced by OMML in-place)
+rep = convert_docx_file("exam.docx", "exam_omml.docx")
+print(f"{rep.ok}/{rep.total} formulas converted, dedup hits {rep.dedup_hits}")
+# Output file: ./exam_omml.docx (path is up to you)
 
-# Batch processing (process pool)
-reports = convert_many(["a.docx", "b.docx"], workers=4)
+# 3. Batch: unpack a zip of docx files and convert each
+reps = convert_zip_of_docx("exam_bundle.zip", "output/")
+# Output files: output/*.docx
+
+# 4. Report-only (does not write to disk)
+from mtefx import convert_docx
+rep = convert_docx("exam.docx")
+print(f"stats: {rep.ok}/{rep.total} ok, cache hits {rep.cache_hits}")
 ```
+
+> **Note**: `convert_docx()` reads the docx and only returns a `DocReport`
+> (totals/success/failure/MTEF version/PUA status). It does **not** modify the
+> file on disk. To actually replace OLE with OMML and save, use
+> `convert_docx_file(src, dst)` or `convert_zip_of_docx(zip_path, out_dir)`.
 
 ### Installation
 

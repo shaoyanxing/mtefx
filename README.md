@@ -83,21 +83,33 @@ OMML（原位替换 docx 里的 OLE 对象）
 ## 快速开始
 
 ```python
-from mtefx import convert, convert_docx, convert_many, FormulaResult
+from mtefx import convert, convert_docx_file, convert_zip_of_docx, FormulaResult
 
-# 单公式：OLE 字节（来自 docx 嵌入 / .bin / 裸 MTEF）
+# 1. 单公式：OLE 字节（来自 docx 嵌入 / .bin / 裸 MTEF）
 res: FormulaResult = convert(ole_bytes)
 if res.ok:
-    print(res.mathml)
+    print(res.mathml)  # MathML 字符串
     print("PUA 修复:", res.pua_fixed, "未映射:", res.pua_unresolved)
 
-# 文档级：直接读 docx 内嵌公式
-rep = convert_docx("试卷.docx")
-print(f"{rep.ok}/{rep.total} 成功，去重命中 {rep.cache_hits}")
+# 2. 转换整个 docx 并保存到新文件（OMML 原位替换 OLE 对象）
+rep = convert_docx_file("试卷.docx", "试卷_omml.docx")
+print(f"{rep.ok}/{rep.total} 公式转换成功，去重命中 {rep.dedup_hits}")
+# 转换后文档存于：当前工作目录/试卷_omml.docx（路径自定）
 
-# 多文档批量处理（进程池）
-reports = convert_many(["a.docx", "b.docx"], workers=4)
+# 3. 批量：解压 zip 里的每个 docx 并转换
+reps = convert_zip_of_docx("试卷合集.zip", "output/")
+# 转换后文档存于：output/*.docx
+
+# 4. 报表式查询（不写文件）
+from mtefx import convert_docx
+rep = convert_docx("试卷.docx")
+print(f"统计: {rep.ok}/{rep.total} ok, 缓存命中 {rep.cache_hits}")
 ```
+
+> **关于"快速开始"里 `convert_docx()` 不写文件**：`convert_docx()` 只读 docx、统计
+> 公式分布（总数/成功/失败/MTEF 版本/PUA 状态），返回 `DocReport`，**不修改磁盘**。
+> 要把 OLE 替换成 OMML 并落盘，请用 `convert_docx_file(src, dst)` 或
+> `convert_zip_of_docx(zip_path, out_dir)`。
 
 ### 安装
 

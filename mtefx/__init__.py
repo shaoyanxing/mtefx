@@ -37,6 +37,13 @@ from mtefx.engine import (
     probe_version,
 )
 from mtefx.pipeline import DocReport, convert_docx, convert_many, summarize
+from mtefx.docxconv import (
+    DocxReport,
+    convert_docx_bytes,
+    convert_docx_file,
+    convert_zip_of_docx,
+    convert_many_docx,
+)
 
 __version__ = "0.1.0"
 
@@ -52,5 +59,10 @@ __all__ = [
     "convert_docx",
     "convert_many",
     "summarize",
+    "DocxReport",
+    "convert_docx_bytes",
+    "convert_docx_file",
+    "convert_zip_of_docx",
+    "convert_many_docx",
     "__version__",
 ]
