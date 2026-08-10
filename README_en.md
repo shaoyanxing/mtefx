@@ -13,10 +13,10 @@ traditionally requires either:
    Office installation, interactive desktop session, single-process serial
    execution, and cannot scale horizontally. Fundamentally incompatible with
    server-side batch processing.
-2. **B route** — olefile + XSLT, in-process, scales linearly with
+2. **Python + XSLT route** — Python + XSLT, in-process, scales linearly with
    process pools.
 
-This project takes **the olefile + XSLT route**, building acceleration and enhancements on
+This project takes **Python + XSLT route**, building acceleration and enhancements on
 top of [`mathtypejx`](https://github.com/a917470154/mathtypejx) and
 [`transpect/mathtype-extension`](https://github.com/transpect/mathtype-extension).
 
