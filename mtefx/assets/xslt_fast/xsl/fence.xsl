@@ -5,45 +5,50 @@
     version="1.0">
 
     <!-- Fences -->
+    <!--
+        所有 fence 字符必须带 stretchy="true"，否则 Word/WordPad 渲染时括号不随
+        内容高度撑大、显示过小，且部分版本会判定 m:oMath 不可识别、弹出"无法识别
+        的内容"对话框。MathML 默认 <mo> 是非 stretchy 的。
+    -->
     <xsl:template match="tmpl[selector='tmPAREN']">
         <mrow>
-            <mo>(</mo>
+            <mo stretchy="true">(</mo>
                 <xsl:apply-templates select="slot[1] | pile[1]"/>
-            <mo>)</mo>
+            <mo stretchy="true">)</mo>
         </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmPAREN' and variation='tvFENCE_L' and not(variation='tvFENCE_R')]">
-        <mrow><mo>(</mo> <xsl:apply-templates select="slot[1] | pile[1]"/></mrow>
+        <mrow><mo stretchy="true">(</mo> <xsl:apply-templates select="slot[1] | pile[1]"/></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmPAREN' and variation='tvFENCE_R' and not(variation='tvFENCE_L')]">
-        <mrow> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo>)</mo></mrow>
+        <mrow> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">)</mo></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmBRACK']">
         <mrow>
-            <mo>[</mo>
+            <mo stretchy="true">[</mo>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
-            <mo>]</mo>
+            <mo stretchy="true">]</mo>
         </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmBRACE']">
         <mrow>
-            <mo>{</mo>
+            <mo stretchy="true">{</mo>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
-            <mo>}</mo>
+            <mo stretchy="true">}</mo>
         </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmANGLE']">
-        <mrow><mo>&#x2329;</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo>&#x232A;</mo></mrow>
+        <mrow><mo stretchy="true">&#x2329;</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">&#x232A;</mo></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmANGLE' and variation='tvFENCE_L' and not(variation='tvFENCE_R')]">
         <mrow>
-            <mo>&#x2329;</mo>
+            <mo stretchy="true">&#x2329;</mo>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
         </mrow>
     </xsl:template>
@@ -51,17 +56,17 @@
     <xsl:template match="tmpl[selector='tmANGLE' and variation='tvFENCE_R' and not(variation='tvFENCE_L')]">
         <mrow>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
-            <mo>&#x232A;</mo>
+            <mo stretchy="true">&#x232A;</mo>
         </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmBAR']">
-        <mrow><mo>|</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo>|</mo></mrow>
+        <mrow><mo stretchy="true">|</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">|</mo></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmBAR' and variation='tvFENCE_L' and not(variation='tvFENCE_R')]">
         <mrow>
-            <mo>|</mo>
+            <mo stretchy="true">|</mo>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
         </mrow>
     </xsl:template>
@@ -69,87 +74,87 @@
     <xsl:template match="tmpl[selector='tmBAR' and variation='tvFENCE_R' and not(variation='tvFENCE_L')]">
         <mrow>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
-            <mo>|</mo>
+            <mo stretchy="true">|</mo>
         </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmFLOOR']">
-        <mrow><mo>&#x230A;</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo>&#x230B;</mo></mrow>
+        <mrow><mo stretchy="true">&#x230A;</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">&#x230B;</mo></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmCEILING']">
-        <mrow><mo>&#x2308;</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo>&#x2309;</mo></mrow>
+        <mrow><mo stretchy="true">&#x2308;</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">&#x2309;</mo></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmINTERVAL' and variation='tvINTV_LBLB']">
-        <mrow> <mo>[</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo>[</mo> </mrow>
+        <mrow> <mo stretchy="true">[</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">[</mo> </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmINTERVAL' and variation='tvINTV_RBRB']">
-        <mrow><mo>]</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo>]</mo></mrow>
+        <mrow><mo stretchy="true">]</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">]</mo></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmINTERVAL' and variation='tvINTV_RBLB']">
-        <mrow><mo>]</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo>[</mo></mrow>
+        <mrow><mo stretchy="true">]</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">[</mo></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmINTERVAL' and variation='tvINTV_LBRP']">
-        <mrow><mo>[</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo>)</mo></mrow>
+        <mrow><mo stretchy="true">[</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">)</mo></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmINTERVAL' and variation='tvINTV_LPRB']">
-        <mrow><mo>(</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo>]</mo></mrow>
+        <mrow><mo stretchy="true">(</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">]</mo></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmBRACK' and variation='tvFENCE_L' and not(variation='tvFENCE_R')]">
-        <mrow> <mo>[</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> </mrow>
+        <mrow> <mo stretchy="true">[</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmBRACK' and variation='tvFENCE_R' and not(variation='tvFENCE_L')]">
-        <mrow><xsl:apply-templates select="slot[1] | pile[1]"/> <mo>]</mo></mrow>
+        <mrow><xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">]</mo></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmBRACE' and variation='tvFENCE_L' and not(variation='tvFENCE_R')]">
-        <mrow><mo>{</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> </mrow>
+        <mrow><mo stretchy="true">{</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmBRACE' and variation='tvFENCE_R' and not(variation='tvFENCE_L')]">
-        <mrow><xsl:apply-templates select="slot[1] | pile[1]"/> <mo>}</mo></mrow>
+        <mrow><xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">}</mo></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmDIRAC']">
         <mrow>
-            <mo>&#x2329;</mo>
+            <mo stretchy="true">&#x2329;</mo>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
-            <mo>|</mo>
+            <mo stretchy="true">|</mo>
             <xsl:apply-templates select="slot[2] | pile[2]"/>
-            <mo>&#x232A;</mo>
+            <mo stretchy="true">&#x232A;</mo>
         </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmDIRAC' and variation='tvDI_RIGHT' and not(variation='tvDI_LEFT')]">
         <mrow>
-            <mo>|</mo>
+            <mo stretchy="true">|</mo>
             <xsl:apply-templates select="slot[2] | pile[2]"/>
-            <mo>&#x232A;</mo>
+            <mo stretchy="true">&#x232A;</mo>
         </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmDIRAC' and variation='tvDI_LEFT' and not(variation='tvDI_RIGHT')]">
         <mrow>
-            <mo>&#x2329;</mo>
+            <mo stretchy="true">&#x2329;</mo>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
-            <mo>|</mo>
+            <mo stretchy="true">|</mo>
         </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmDBAR']">
-        <mrow><mo>&#x2016;</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo>&#x2016;</mo></mrow>
+        <mrow><mo stretchy="true">&#x2016;</mo> <xsl:apply-templates select="slot[1] | pile[1]"/> <mo stretchy="true">&#x2016;</mo></mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmDBAR' and variation='tvFENCE_L' and not(variation='tvFENCE_R')]">
         <mrow>
-            <mo>&#x2016;</mo>
+            <mo stretchy="true">&#x2016;</mo>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
         </mrow>
     </xsl:template>
@@ -157,21 +162,21 @@
     <xsl:template match="tmpl[selector='tmDBAR' and variation='tvFENCE_R' and not(variation='tvFENCE_L')]">
         <mrow>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
-            <mo>&#x2016;</mo>
+            <mo stretchy="true">&#x2016;</mo>
         </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmOBRACK']">
         <mrow>
-            <mo>&#x301A;</mo>
+            <mo stretchy="true">&#x301A;</mo>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
-            <mo>&#x301B;</mo>
+            <mo stretchy="true">&#x301B;</mo>
         </mrow>
     </xsl:template>
 
     <xsl:template match="tmpl[selector='tmOBRACK' and variation='tvFENCE_L' and not(variation='tvFENCE_R')]">
         <mrow>
-            <mo>&#x301A;</mo>
+            <mo stretchy="true">&#x301A;</mo>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
         </mrow>
     </xsl:template>
@@ -179,7 +184,7 @@
     <xsl:template match="tmpl[selector='tmOBRACK' and variation='tvFENCE_R' and not(variation='tvFENCE_L')]">
         <mrow>
             <xsl:apply-templates select="slot[1] | pile[1]"/>
-            <mo>&#x301B;</mo>
+            <mo stretchy="true">&#x301B;</mo>
         </mrow>
     </xsl:template>
 

@@ -235,8 +235,25 @@ def convert_docx_bytes(
     removed_files = {f for f in removed_files if f and f not in live}
 
     # 重新打包
-    # 把 OMML 命名空间声明提升到根（避免每个 <m:oMath> 都带 xmlns:m，且保证前缀绑定）
+    # 关键：etree.cleanup_namespaces() 会把根上未用到的 xmlns:m 声明一并清掉，
+    # 而 m:oMath 必须挂在 m 命名空间下才能被 Word 识别，否则弹出"无法识别
+    # 的内容"。这里改用精确控制：先清理未使用的命名空间，再显式补回 m:。
     etree.cleanup_namespaces(root)
+    if root.tag == f"{{{_NS['w']}}}document":
+        nsmap = dict(root.nsmap or {})
+        nsmap.setdefault("m", M_NS)
+        # 重建根元素，确保 m 命名空间声明存在
+        new_root = etree.Element(
+            root.tag,
+            attrib=dict(root.attrib),
+            nsmap=nsmap,
+        )
+        new_root.text = root.text
+        for child in root:
+            new_root.append(child)
+        for k, v in root.attrib.items():
+            new_root.set(k, v)
+        root = new_root
     new_doc_bytes = etree.tostring(root, xml_declaration=True, encoding="UTF-8")
     new_rels_bytes = (
         etree.tostring(rels_root, xml_declaration=True, encoding="UTF-8")
